@@ -18,6 +18,7 @@ import {PopFendisSuckerPunch} from "../src/PopFendisSuckerPunch.sol";
 import {HookMiner} from "./utils/HookMiner.sol";
 import {SwapFeeLibrary} from "v4-core/src/libraries/SwapFeeLibrary.sol";
 import {PoolModifyLiquidityTest} from "v4-core/src/test/PoolModifyLiquidityTest.sol";
+import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 
 
 contract SuckerPunchTest is Test, Deployers {
@@ -64,7 +65,46 @@ contract SuckerPunchTest is Test, Deployers {
         SwapFeeLibrary.DYNAMIC_FEE_FLAG,
         SQRT_RATIO_1_1,
         ZERO_BYTES,
-        10 ether
+        100 ether
     );
+
     }
+    
+
+    function testSandwich() public {
+        address user1 = vm.addr(0x1);
+        vm.deal(user1, .2 ether);
+        vm.startPrank(user1, tx.origin);
+        
+        uint preBal = user1.balance;
+        console.log("pre balance: %d", user1.balance);
+
+        bool zeroForOne = true;
+        int256 amountSpecified = -0.1 ether;
+        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+
+        uint postBalance = currency1.balanceOf(user1);
+        console.log(postBalance);
+
+        address[1] memory toApprove = [
+            address(swapRouter)
+        ];
+
+        address currencyaddy = Currency.unwrap(currency1);
+        MockERC20 erc20 = MockERC20(currencyaddy);
+
+        erc20.approve(address(swapRouter), type(uint256).max);
+        zeroForOne = false;
+        amountSpecified = int256(postBalance);
+        swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+
+        uint postBal = user1.balance - 0.1 ether;
+        console.log("post balance: %d", user1.balance);
+
+        // balance should be less than 90% of original buy price
+        assertTrue(postBal < 0.09 ether);
+        vm.stopPrank();
+    }
+    
+
 }
