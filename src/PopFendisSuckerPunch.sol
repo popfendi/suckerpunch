@@ -3,8 +3,6 @@
 // for EthLondon Hackathon 2024
 pragma solidity ^0.8.24;
 
-import "forge-std/console.sol";
-
 import {BaseHook} from "v4-periphery/BaseHook.sol";
 
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
@@ -43,11 +41,12 @@ contract PopFendisSuckerPunch is BaseHook {
 
     uint128 public constant decayRate = 642;
 
-    // 99% for sandwichers
+    // 9.9% for sandwichers
     uint128 public constant MEV_FEE = 999_999;
 
-    function setFee(PoolKey calldata key) internal returns (uint24 _currentFee) {
+    function setFee(PoolKey calldata key) public {
         PoolId poolId = key.toId();
+        uint24 _currentFee;
 
         // No fee on buys
         if (inBuy) {
